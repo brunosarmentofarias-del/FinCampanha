@@ -21,5 +21,8 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // /icon é o favicon gerado dinamicamente (src/app/icon.tsx) — precisa ficar público,
+  // senão o navegador nunca consegue buscar o ícone antes do login (ex.: na própria
+  // tela de login) e cai de volta no genérico.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon).*)"],
 };
