@@ -1,0 +1,127 @@
+// Prisma schema — FinCampanha
+// Postgres (Neon) — mesmo banco em dev e produção (Vercel).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nome         String?
+  createdAt    DateTime @default(now())
+}
+
+model Cliente {
+  id           String   @id @default(cuid())
+  nome         String   @unique // "PLINIO", "GEORGE", "ATILA", "DAVID", "PAULO", "PARTIDO NOVO"
+  nomeCompleto String? // "ELEICOES 2026 - PLINIO VALERIO"
+  isCandidato  Boolean  @default(true) // false = serviço específico, NÃO entra no rateio
+  ativo        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  receitas Receita[]
+  despesas Despesa[]
+}
+
+model Fornecedor {
+  id        String         @id @default(cuid())
+  nome      String         @unique
+  documento String? // CPF/CNPJ quando houver
+  tipo      TipoFornecedor @default(PF)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  despesas Despesa[]
+}
+
+model GrupoDespesa {
+  id        String   @id @default(cuid())
+  nome      String   @unique // Prestadores de Serviço, Marketing / Impulsionamento, Alimentação, Gráfica, Transporte, Outros
+  cor       String? // hex para os gráficos
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  despesas Despesa[]
+}
+
+model Receita {
+  id            String         @id @default(cuid())
+  clienteId     String
+  descricao     String
+  parcelaNum    Int?
+  parcelaTotal  Int?
+  vencimento    DateTime
+  dataPagamento DateTime?
+  valor         Decimal // SEMPRE POSITIVO
+  status        StatusReceita
+  importHash    String?        @unique
+  idempotencyKey String?       @unique // gerada pelo formulário ao abrir o diálogo de criação; evita duplo-clique/retry criando 2 lançamentos
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+
+  @@index([clienteId])
+  @@index([status])
+  @@index([vencimento])
+}
+
+model Despesa {
+  id            String         @id @default(cuid())
+  fornecedorId  String
+  grupoId       String
+  descricao     String
+  parcelaNum    Int?
+  parcelaTotal  Int?
+  vencimento    DateTime
+  dataPagamento DateTime?
+  valor         Decimal // SEMPRE POSITIVO (o sinal é dado pelo tipo)
+  status        StatusDespesa
+  rateio        TipoRateio
+  clienteId     String? // obrigatório se rateio = ESPECIFICA; null nos outros
+  importHash    String?        @unique
+  idempotencyKey String?       @unique // gerada pelo formulário ao abrir o diálogo de criação; evita duplo-clique/retry criando 2 lançamentos
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  fornecedor Fornecedor    @relation(fields: [fornecedorId], references: [id])
+  grupo      GrupoDespesa  @relation(fields: [grupoId], references: [id])
+  cliente    Cliente?      @relation(fields: [clienteId], references: [id])
+
+  @@index([fornecedorId])
+  @@index([grupoId])
+  @@index([clienteId])
+  @@index([status])
+  @@index([rateio])
+  @@index([vencimento])
+}
+
+enum StatusReceita {
+  RECEBIDO
+  A_RECEBER
+}
+
+enum StatusDespesa {
+  PAGO
+  A_PAGAR
+}
+
+enum TipoRateio {
+  ESPECIFICA
+  TODAS
+  NAO_ALOCADA
+}
+
+enum TipoFornecedor {
+  PF
+  PJ
+}

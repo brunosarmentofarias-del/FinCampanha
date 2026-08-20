@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +40,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# banco local e bancos de teste
+/prisma/*.db
+/prisma/*.db-journal
+
+# planilha real da campanha — contém dados financeiros sensíveis, nunca commitar
+/fixtures/*.xlsx
+!/fixtures/.gitkeep
