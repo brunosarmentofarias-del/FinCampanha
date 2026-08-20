@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fornecedorSchema } from "@/lib/schemas";
 import { inferirTipoFornecedor } from "@/lib/documento";
+import { requireAdmin } from "@/lib/require-role";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const bloqueio = await requireAdmin();
+  if (bloqueio) return bloqueio;
+
   const { id } = await params;
   const body = await req.json();
   const parsed = fornecedorSchema.partial().safeParse(body);
@@ -21,6 +25,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const bloqueio = await requireAdmin();
+  if (bloqueio) return bloqueio;
+
   const { id } = await params;
   const despesas = await prisma.despesa.count({ where: { fornecedorId: id } });
   if (despesas > 0) {

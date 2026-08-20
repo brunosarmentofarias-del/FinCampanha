@@ -1,7 +1,9 @@
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ReceitasTable } from "./receitas-table";
 
 export default async function ReceitasPage() {
+  const session = await auth();
   const [receitas, clientes] = await Promise.all([
     prisma.receita.findMany({ include: { cliente: true }, orderBy: { vencimento: "asc" } }),
     prisma.cliente.findMany({ orderBy: { nome: "asc" } }),
@@ -26,7 +28,11 @@ export default async function ReceitasPage() {
         <h1 className="text-xl font-semibold">Receitas</h1>
         <p className="text-sm text-muted-foreground">Lançamentos de receita por campanha.</p>
       </div>
-      <ReceitasTable linhas={linhas} clientes={clientes} />
+      <ReceitasTable
+        linhas={linhas}
+        clientes={clientes}
+        podeExcluir={session?.user?.role === "ADMIN"}
+      />
     </div>
   );
 }

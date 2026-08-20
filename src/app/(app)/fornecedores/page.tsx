@@ -1,7 +1,9 @@
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { FornecedoresTable } from "./fornecedores-table";
 
 export default async function FornecedoresPage() {
+  const session = await auth();
   const fornecedores = await prisma.fornecedor.findMany({
     orderBy: { nome: "asc" },
     include: { _count: { select: { despesas: true } } },
@@ -24,7 +26,7 @@ export default async function FornecedoresPage() {
         <h1 className="text-xl font-semibold">Fornecedores</h1>
         <p className="text-sm text-muted-foreground">Prestadores de serviço e fornecedores da campanha.</p>
       </div>
-      <FornecedoresTable linhas={linhas} />
+      <FornecedoresTable linhas={linhas} isAdmin={session?.user?.role === "ADMIN"} />
     </div>
   );
 }

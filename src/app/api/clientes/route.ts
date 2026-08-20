@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { clienteSchema } from "@/lib/schemas";
+import { requireAdmin } from "@/lib/require-role";
 
 export async function GET() {
   const clientes = await prisma.cliente.findMany({ orderBy: { nome: "asc" } });
@@ -8,6 +9,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const bloqueio = await requireAdmin();
+  if (bloqueio) return bloqueio;
+
   const body = await req.json();
   const parsed = clienteSchema.safeParse(body);
   if (!parsed.success) {

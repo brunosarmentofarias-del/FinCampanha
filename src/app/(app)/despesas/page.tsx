@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DespesasTable } from "./despesas-table";
 
@@ -7,6 +8,7 @@ export default async function DespesasPage({
   searchParams: Promise<{ rateio?: string }>;
 }) {
   const { rateio } = await searchParams;
+  const session = await auth();
 
   const [despesas, clientes, fornecedores, grupos] = await Promise.all([
     prisma.despesa.findMany({
@@ -48,6 +50,7 @@ export default async function DespesasPage({
         fornecedores={fornecedores}
         grupos={grupos}
         filtroInicial={rateio}
+        podeExcluir={session?.user?.role === "ADMIN"}
       />
     </div>
   );

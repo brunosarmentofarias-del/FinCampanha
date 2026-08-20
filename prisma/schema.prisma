@@ -16,7 +16,13 @@ model User {
   email        String   @unique
   passwordHash String
   nome         String?
+  role         Role     @default(ADMIN)
   createdAt    DateTime @default(now())
+}
+
+enum Role {
+  ADMIN // acesso total, inclusive excluir lançamentos e gerenciar usuários
+  FINANCEIRO // pode lançar e editar receitas/despesas; nunca excluir — exclusão exige um ADMIN
 }
 
 model Cliente {

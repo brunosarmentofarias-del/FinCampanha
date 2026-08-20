@@ -30,7 +30,13 @@ interface FornecedorRow {
   totalDespesas: number;
 }
 
-export function FornecedoresTable({ linhas }: { linhas: FornecedorRow[] }) {
+export function FornecedoresTable({
+  linhas,
+  isAdmin = false,
+}: {
+  linhas: FornecedorRow[];
+  isAdmin?: boolean;
+}) {
   const router = useRouter();
   const [dialogAberto, setDialogAberto] = useState(false);
   const [editando, setEditando] = useState<FornecedorRow | null>(null);
@@ -77,56 +83,58 @@ export function FornecedoresTable({ linhas }: { linhas: FornecedorRow[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
-          <DialogTrigger
-            render={
-              <Button
-                onClick={() => {
-                  setEditando(null);
-                  setDocumento("");
-                }}
-              />
-            }
-          >
-            <Plus className="mr-1 h-4 w-4" /> Novo Fornecedor
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editando ? "Editar Fornecedor" : "Novo Fornecedor"}</DialogTitle>
-            </DialogHeader>
-            <form action={salvar} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="nome">Nome</Label>
-                <Input id="nome" name="nome" defaultValue={editando?.nome} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="documento">CPF/CNPJ</Label>
-                <Input
-                  id="documento"
-                  name="documento"
-                  value={documento}
-                  onChange={(e) => setDocumento(e.target.value)}
-                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
+      {isAdmin && (
+        <div className="flex justify-end">
+          <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
+            <DialogTrigger
+              render={
+                <Button
+                  onClick={() => {
+                    setEditando(null);
+                    setDocumento("");
+                  }}
                 />
-                <p className="text-xs text-muted-foreground">
-                  {tipoDetectado === "PF" && "Reconhecido como Pessoa Física (CPF)."}
-                  {tipoDetectado === "PJ" && "Reconhecido como Pessoa Jurídica (CNPJ)."}
-                  {tipoDetectado === null &&
-                    (editando
-                      ? `Tipo atual mantido: ${editando.tipo === "PF" ? "Pessoa Física" : "Pessoa Jurídica"} — preencha um CPF (11 dígitos) ou CNPJ (14 dígitos) para reclassificar.`
-                      : "Preencha o CPF (11 dígitos) ou CNPJ (14 dígitos) para o sistema reconhecer o tipo automaticamente.")}
-                </p>
-              </div>
-              <DialogFooter>
-                <Button type="submit" disabled={salvando}>
-                  {salvando ? "Salvando..." : "Salvar"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+              }
+            >
+              <Plus className="mr-1 h-4 w-4" /> Novo Fornecedor
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editando ? "Editar Fornecedor" : "Novo Fornecedor"}</DialogTitle>
+              </DialogHeader>
+              <form action={salvar} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nome">Nome</Label>
+                  <Input id="nome" name="nome" defaultValue={editando?.nome} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="documento">CPF/CNPJ</Label>
+                  <Input
+                    id="documento"
+                    name="documento"
+                    value={documento}
+                    onChange={(e) => setDocumento(e.target.value)}
+                    placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {tipoDetectado === "PF" && "Reconhecido como Pessoa Física (CPF)."}
+                    {tipoDetectado === "PJ" && "Reconhecido como Pessoa Jurídica (CNPJ)."}
+                    {tipoDetectado === null &&
+                      (editando
+                        ? `Tipo atual mantido: ${editando.tipo === "PF" ? "Pessoa Física" : "Pessoa Jurídica"} — preencha um CPF (11 dígitos) ou CNPJ (14 dígitos) para reclassificar.`
+                        : "Preencha o CPF (11 dígitos) ou CNPJ (14 dígitos) para o sistema reconhecer o tipo automaticamente.")}
+                  </p>
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={salvando}>
+                    {salvando ? "Salvando..." : "Salvar"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
 
       <div className="rounded-md border bg-card">
         <Table>
@@ -160,22 +168,24 @@ export function FornecedoresTable({ linhas }: { linhas: FornecedorRow[] }) {
                   {formatCurrency(f.totalDespesas)}
                 </TableCell>
                 <TableCell>
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setEditando(f);
-                        setDocumento(f.documento ?? "");
-                        setDialogAberto(true);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => excluir(f)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setEditando(f);
+                          setDocumento(f.documento ?? "");
+                          setDialogAberto(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => excluir(f)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

@@ -8,9 +8,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-dvh overflow-hidden">
-      <Sidebar />
+      <Sidebar role={session?.user?.role} />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar userEmail={session?.user?.email} userName={session?.user?.name} alertas={alertas} />
+        <Topbar
+          userEmail={session?.user?.email}
+          userName={session?.user?.name}
+          role={session?.user?.role}
+          alertas={alertas}
+        />
         <main className="flex-1 overflow-y-auto bg-muted/20 p-4 md:p-6">{children}</main>
       </div>
     </div>

@@ -73,8 +73,16 @@ export const despesaSchema = z
     path: ["clienteId"],
   });
 
+export const usuarioSchema = z.object({
+  nome: z.string().trim().min(1, "Nome é obrigatório").max(100),
+  email: z.string().trim().email("E-mail inválido").max(200),
+  senha: z.string().min(8, "Senha deve ter pelo menos 8 caracteres").max(100),
+  role: z.enum(["ADMIN", "FINANCEIRO"]),
+});
+
 export type ClienteInput = z.infer<typeof clienteSchema>;
 export type FornecedorInput = z.infer<typeof fornecedorSchema>;
 export type GrupoDespesaInput = z.infer<typeof grupoDespesaSchema>;
 export type ReceitaInput = z.infer<typeof receitaSchema>;
 export type DespesaInput = z.infer<typeof despesaSchema>;
+export type UsuarioInput = z.infer<typeof usuarioSchema>;

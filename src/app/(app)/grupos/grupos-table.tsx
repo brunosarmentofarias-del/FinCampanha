@@ -24,7 +24,13 @@ interface GrupoRow {
   _count: { despesas: number };
 }
 
-export function GruposTable({ grupos }: { grupos: GrupoRow[] }) {
+export function GruposTable({
+  grupos,
+  isAdmin = false,
+}: {
+  grupos: GrupoRow[];
+  isAdmin?: boolean;
+}) {
   const router = useRouter();
   const [dialogAberto, setDialogAberto] = useState(false);
   const [editando, setEditando] = useState<GrupoRow | null>(null);
@@ -66,41 +72,43 @@ export function GruposTable({ grupos }: { grupos: GrupoRow[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
-          <DialogTrigger render={<Button onClick={() => setEditando(null)} />}>
-            <Plus className="mr-1 h-4 w-4" /> Novo Grupo
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editando ? "Editar Grupo" : "Novo Grupo"}</DialogTitle>
-            </DialogHeader>
-            <form action={salvar} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="nome">Nome</Label>
-                <Input id="nome" name="nome" defaultValue={editando?.nome} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cor">Cor</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="cor"
-                    name="cor"
-                    type="color"
-                    defaultValue={editando?.cor ?? "#2563eb"}
-                    className="h-9 w-16 p-1"
-                  />
+      {isAdmin && (
+        <div className="flex justify-end">
+          <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
+            <DialogTrigger render={<Button onClick={() => setEditando(null)} />}>
+              <Plus className="mr-1 h-4 w-4" /> Novo Grupo
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editando ? "Editar Grupo" : "Novo Grupo"}</DialogTitle>
+              </DialogHeader>
+              <form action={salvar} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nome">Nome</Label>
+                  <Input id="nome" name="nome" defaultValue={editando?.nome} required />
                 </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" disabled={salvando}>
-                  {salvando ? "Salvando..." : "Salvar"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cor">Cor</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="cor"
+                      name="cor"
+                      type="color"
+                      defaultValue={editando?.cor ?? "#2563eb"}
+                      className="h-9 w-16 p-1"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={salvando}>
+                    {salvando ? "Salvando..." : "Salvar"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
 
       <div className="rounded-md border bg-card">
         <Table>
@@ -125,21 +133,23 @@ export function GruposTable({ grupos }: { grupos: GrupoRow[] }) {
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{g._count.despesas}</TableCell>
                 <TableCell>
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setEditando(g);
-                        setDialogAberto(true);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => excluir(g)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setEditando(g);
+                          setDialogAberto(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => excluir(g)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

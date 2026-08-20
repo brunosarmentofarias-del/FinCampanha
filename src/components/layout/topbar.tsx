@@ -10,14 +10,17 @@ import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
 import { prisma } from "@/lib/prisma";
 import type { AlertasResumo } from "@/lib/data/alerts";
+import type { Role } from "@prisma/client";
 
 export async function Topbar({
   userEmail,
   userName,
+  role,
   alertas,
 }: {
   userEmail: string | null | undefined;
   userName: string | null | undefined;
+  role?: Role;
   alertas: AlertasResumo;
 }) {
   const clientes = await prisma.cliente.findMany({
@@ -35,7 +38,7 @@ export async function Topbar({
     <header className="flex flex-col gap-2 border-b bg-background px-4 py-2.5">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <MobileNav />
+          <MobileNav role={role} />
           <div className="flex items-center gap-2">
             <span className="hidden text-sm font-medium text-muted-foreground sm:inline">
               Campanha:

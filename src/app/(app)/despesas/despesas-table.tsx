@@ -58,12 +58,14 @@ export function DespesasTable({
   fornecedores,
   grupos,
   filtroInicial,
+  podeExcluir = false,
 }: {
   linhas: DespesaRow[];
   clientes: Ref[];
   fornecedores: Ref[];
   grupos: Ref[];
   filtroInicial?: string;
+  podeExcluir?: boolean;
 }) {
   const router = useRouter();
   const [busca, setBusca] = useState("");
@@ -701,9 +703,11 @@ export function DespesasTable({
                     <Button variant="ghost" size="icon" onClick={() => abrirEdicao(d)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => excluir(d)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {podeExcluir && (
+                      <Button variant="ghost" size="icon" onClick={() => excluir(d)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

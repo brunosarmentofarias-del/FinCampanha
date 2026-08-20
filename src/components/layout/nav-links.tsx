@@ -11,8 +11,10 @@ import {
   Tags,
   CalendarRange,
   FileBarChart,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Role } from "@prisma/client";
 
 export const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -25,12 +27,17 @@ export const NAV_LINKS = [
   { href: "/relatorios", label: "Relatórios", icon: FileBarChart },
 ];
 
-export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+// Só aparece para ADMIN — a página em si também barra no servidor (redirect),
+// isso aqui é só pra não mostrar o link pra quem não pode entrar.
+const NAV_LINKS_ADMIN = [{ href: "/configuracoes", label: "Configurações", icon: Settings }];
+
+export function NavLinks({ role, onNavigate }: { role?: Role; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const links = role === "ADMIN" ? [...NAV_LINKS, ...NAV_LINKS_ADMIN] : NAV_LINKS;
 
   return (
     <nav className="flex-1 space-y-0.5 p-2">
-      {NAV_LINKS.map(({ href, label, icon: Icon }) => {
+      {links.map(({ href, label, icon: Icon }) => {
         const ativo = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link

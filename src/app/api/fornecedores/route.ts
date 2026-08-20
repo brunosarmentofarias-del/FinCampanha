@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fornecedorSchema } from "@/lib/schemas";
 import { inferirTipoFornecedor } from "@/lib/documento";
+import { requireAdmin } from "@/lib/require-role";
 
 export async function GET() {
   const fornecedores = await prisma.fornecedor.findMany({ orderBy: { nome: "asc" } });
@@ -9,6 +10,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const bloqueio = await requireAdmin();
+  if (bloqueio) return bloqueio;
+
   const body = await req.json();
   const parsed = fornecedorSchema.safeParse(body);
   if (!parsed.success) {

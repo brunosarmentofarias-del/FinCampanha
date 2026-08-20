@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { receitaSchema } from "@/lib/schemas";
+import { requireAdmin } from "@/lib/require-role";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -14,6 +15,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const bloqueio = await requireAdmin();
+  if (bloqueio) return bloqueio;
+
   const { id } = await params;
   await prisma.receita.delete({ where: { id } });
   return NextResponse.json({ ok: true });

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { grupoDespesaSchema } from "@/lib/schemas";
+import { requireAdmin } from "@/lib/require-role";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const bloqueio = await requireAdmin();
+  if (bloqueio) return bloqueio;
+
   const { id } = await params;
   const body = await req.json();
   const parsed = grupoDespesaSchema.partial().safeParse(body);
@@ -14,6 +18,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const bloqueio = await requireAdmin();
+  if (bloqueio) return bloqueio;
+
   const { id } = await params;
   const despesas = await prisma.despesa.count({ where: { grupoId: id } });
   if (despesas > 0) {

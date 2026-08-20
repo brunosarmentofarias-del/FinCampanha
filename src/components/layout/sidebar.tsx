@@ -1,7 +1,8 @@
 import { CircleDollarSign } from "lucide-react";
 import { NavLinks } from "./nav-links";
+import type { Role } from "@prisma/client";
 
-export function Sidebar() {
+export function Sidebar({ role }: { role?: Role }) {
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
       <div className="flex items-center gap-2.5 border-b px-4 py-4">
@@ -14,7 +15,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      <NavLinks />
+      <NavLinks role={role} />
 
       <div className="border-t p-3">
         <p className="text-center text-[11px] text-muted-foreground">FinCampanha v1.0.0</p>

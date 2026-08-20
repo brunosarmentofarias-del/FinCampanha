@@ -5,8 +5,9 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NavLinks } from "./nav-links";
+import type { Role } from "@prisma/client";
 
-export function MobileNav() {
+export function MobileNav({ role }: { role?: Role }) {
   const [aberto, setAberto] = useState(false);
 
   return (
@@ -18,7 +19,7 @@ export function MobileNav() {
         <DialogHeader className="border-b p-4">
           <DialogTitle>FinCampanha</DialogTitle>
         </DialogHeader>
-        <NavLinks onNavigate={() => setAberto(false)} />
+        <NavLinks role={role} onNavigate={() => setAberto(false)} />
       </DialogContent>
     </Dialog>
   );

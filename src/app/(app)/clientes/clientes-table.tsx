@@ -36,7 +36,7 @@ interface Linha {
   resultado: ResultadoCampanha | null;
 }
 
-export function ClientesTable({ linhas }: { linhas: Linha[] }) {
+export function ClientesTable({ linhas, isAdmin = false }: { linhas: Linha[]; isAdmin?: boolean }) {
   const router = useRouter();
   const [dialogAberto, setDialogAberto] = useState(false);
   const [editando, setEditando] = useState<ClienteRow | null>(null);
@@ -106,41 +106,43 @@ export function ClientesTable({ linhas }: { linhas: Linha[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
-          <DialogTrigger render={<Button onClick={abrirNovo} />}>
-            <Plus className="mr-1 h-4 w-4" /> Novo Cliente
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editando ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
-            </DialogHeader>
-            <form action={salvar} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="nome">Nome (chave curta)</Label>
-                <Input id="nome" name="nome" defaultValue={editando?.nome} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="nomeCompleto">Nome completo</Label>
-                <Input id="nomeCompleto" name="nomeCompleto" defaultValue={editando?.nomeCompleto ?? ""} />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="isCandidato">Candidato (entra no rateio)</Label>
-                <Switch id="isCandidato" name="isCandidato" defaultChecked={editando?.isCandidato ?? true} />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="ativo">Ativo</Label>
-                <Switch id="ativo" name="ativo" defaultChecked={editando?.ativo ?? true} />
-              </div>
-              <DialogFooter>
-                <Button type="submit" disabled={salvando}>
-                  {salvando ? "Salvando..." : "Salvar"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+      {isAdmin && (
+        <div className="flex justify-end">
+          <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
+            <DialogTrigger render={<Button onClick={abrirNovo} />}>
+              <Plus className="mr-1 h-4 w-4" /> Novo Cliente
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editando ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
+              </DialogHeader>
+              <form action={salvar} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nome">Nome (chave curta)</Label>
+                  <Input id="nome" name="nome" defaultValue={editando?.nome} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nomeCompleto">Nome completo</Label>
+                  <Input id="nomeCompleto" name="nomeCompleto" defaultValue={editando?.nomeCompleto ?? ""} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="isCandidato">Candidato (entra no rateio)</Label>
+                  <Switch id="isCandidato" name="isCandidato" defaultChecked={editando?.isCandidato ?? true} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="ativo">Ativo</Label>
+                  <Switch id="ativo" name="ativo" defaultChecked={editando?.ativo ?? true} />
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={salvando}>
+                    {salvando ? "Salvando..." : "Salvar"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
 
       <div className="rounded-md border bg-card">
         <Table>
@@ -170,6 +172,7 @@ export function ClientesTable({ linhas }: { linhas: Linha[] }) {
                 <TableCell>
                   <Switch
                     checked={cliente.isCandidato}
+                    disabled={!isAdmin}
                     onCheckedChange={(v) => toggleCandidato(cliente, v)}
                   />
                 </TableCell>
@@ -212,14 +215,16 @@ export function ClientesTable({ linhas }: { linhas: Linha[] }) {
                   {resultado?.margemReal == null ? "—" : formatPercent(resultado.margemReal)}
                 </TableCell>
                 <TableCell>
-                  <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => abrirEdicao(cliente)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => excluir(cliente)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => abrirEdicao(cliente)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => excluir(cliente)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

@@ -1,9 +1,11 @@
+import { auth } from "@/lib/auth";
 import { receitaPorCliente, resultadoPorCampanha } from "@/lib/calc";
 import { getClientesCalc, getDespesasCalc, getReceitasCalc } from "@/lib/data/calc-data";
 import { prisma } from "@/lib/prisma";
 import { ClientesTable } from "./clientes-table";
 
 export default async function ClientesPage() {
+  const session = await auth();
   const clientesDb = await prisma.cliente.findMany({ orderBy: { nome: "asc" } });
   const [clientesCalc, receitas, despesas] = await Promise.all([
     getClientesCalc(),
@@ -28,7 +30,7 @@ export default async function ClientesPage() {
           <p className="text-sm text-muted-foreground">Campanhas e serviços específicos, com mini-P&amp;L.</p>
         </div>
       </div>
-      <ClientesTable linhas={linhas} />
+      <ClientesTable linhas={linhas} isAdmin={session?.user?.role === "ADMIN"} />
     </div>
   );
 }

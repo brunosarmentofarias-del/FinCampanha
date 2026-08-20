@@ -46,7 +46,15 @@ interface ReceitaRow {
 
 type Ordenacao = "vencimento" | "valor" | "cliente";
 
-export function ReceitasTable({ linhas, clientes }: { linhas: ReceitaRow[]; clientes: Cliente[] }) {
+export function ReceitasTable({
+  linhas,
+  clientes,
+  podeExcluir = false,
+}: {
+  linhas: ReceitaRow[];
+  clientes: Cliente[];
+  podeExcluir?: boolean;
+}) {
   const router = useRouter();
   const [busca, setBusca] = useState("");
   const [filtroCliente, setFiltroCliente] = useState("todos");
@@ -392,9 +400,11 @@ export function ReceitasTable({ linhas, clientes }: { linhas: ReceitaRow[]; clie
                     <Button variant="ghost" size="icon" onClick={() => abrirEdicao(r)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => excluir(r)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {podeExcluir && (
+                      <Button variant="ghost" size="icon" onClick={() => excluir(r)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
