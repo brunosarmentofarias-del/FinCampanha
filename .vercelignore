@@ -1,0 +1,7 @@
+.env
+.env.local
+.env*.local
+prisma/dev.db
+prisma/*.db
+prisma/*.db-journal
+fixtures/*.xlsx
