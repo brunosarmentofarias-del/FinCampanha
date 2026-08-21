@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate, LABEL_RATEIO, LABEL_STATUS_DESPESA } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { rankingFornecedores } from "@/lib/calc";
+import { getDespesasCalc } from "@/lib/data/calc-data";
 
 export default async function FornecedorDetalhePage({
   params,
@@ -13,22 +15,27 @@ export default async function FornecedorDetalhePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const fornecedor = await prisma.fornecedor.findUnique({
-    where: { id },
-    include: {
-      despesas: {
-        include: { grupo: true, cliente: true },
-        orderBy: { vencimento: "desc" },
+  const [fornecedor, despesasTodas] = await Promise.all([
+    prisma.fornecedor.findUnique({
+      where: { id },
+      include: {
+        despesas: {
+          include: { grupo: true, cliente: true },
+          orderBy: { vencimento: "desc" },
+        },
       },
-    },
-  });
+    }),
+    getDespesasCalc(),
+  ]);
 
   if (!fornecedor) notFound();
 
-  const total = fornecedor.despesas.reduce((acc, d) => acc + Number(d.valor), 0);
-  const pago = fornecedor.despesas
-    .filter((d) => d.status === "PAGO")
-    .reduce((acc, d) => acc + Number(d.valor), 0);
+  // Mesma função usada no ranking do dashboard/relatórios — nunca uma fórmula própria
+  // por tela (ver auditoria financeira, seção "cálculo centralizado").
+  const linha = rankingFornecedores(despesasTodas, Infinity).find((r) => r.fornecedorId === id);
+  const total = linha?.total ?? 0;
+  const pago = linha?.pago ?? 0;
+  const aPagar = linha?.aPagar ?? 0;
 
   return (
     <div className="space-y-4">
@@ -66,7 +73,7 @@ export default async function FornecedorDetalhePage({
             <CardTitle className="text-xs text-muted-foreground">A pagar</CardTitle>
           </CardHeader>
           <CardContent className="text-lg font-semibold text-amber-600 dark:text-amber-400">
-            {formatCurrency(total - pago)}
+            {formatCurrency(aPagar)}
           </CardContent>
         </Card>
       </div>

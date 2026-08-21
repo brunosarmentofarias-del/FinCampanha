@@ -28,3 +28,29 @@ export async function criarIdempotente<T>(
     throw e;
   }
 }
+
+/**
+ * Mesma ideia de criarIdempotente, mas para cadastros (Cliente, Fornecedor, GrupoDespesa)
+ * cuja unicidade é pelo campo "nome" em vez de um idempotencyKey dedicado: um duplo-clique
+ * ou retry no cadastro devolve o registro já existente em vez de estourar um 500 cru.
+ */
+export async function criarSemDuplicarNome<T>(
+  criar: () => Promise<T>,
+  buscarExistente: () => Promise<T | null>
+): Promise<{ registro: T; duplicataEvitada: boolean }> {
+  try {
+    const registro = await criar();
+    return { registro, duplicataEvitada: false };
+  } catch (e) {
+    const colisaoDeNome =
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === "P2002" &&
+      (e.meta?.target as string[] | undefined)?.includes("nome");
+
+    if (colisaoDeNome) {
+      const existente = await buscarExistente();
+      if (existente) return { registro: existente, duplicataEvitada: true };
+    }
+    throw e;
+  }
+}

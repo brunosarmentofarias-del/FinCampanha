@@ -308,3 +308,102 @@ describe("rankingFornecedores", () => {
     expect(ranking).toHaveLength(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Teste principal do sistema — cenário da auditoria financeira (seção 28):
+// campanha com R$1.000.000 contratados, R$600.000 recebidos, R$400.000 de
+// despesa específica, R$250.000 pagos. Os 10 números abaixo precisam bater
+// exatamente, sempre derivados dos lançamentos — nunca digitados.
+// ---------------------------------------------------------------------------
+describe("Teste principal do sistema (auditoria financeira, seção 28)", () => {
+  const campanhaTeste: ClienteCalc[] = [{ id: "campanha-teste", nome: "CAMPANHA TESTE", isCandidato: false }];
+
+  const receitasTeste: ReceitaCalc[] = [
+    {
+      id: "rt1",
+      clienteId: "campanha-teste",
+      clienteNome: "CAMPANHA TESTE",
+      descricao: "Parcela recebida",
+      vencimento: new Date(2026, 0, 10),
+      dataPagamento: new Date(2026, 0, 10),
+      valor: 600_000,
+      status: "RECEBIDO",
+    },
+    {
+      id: "rt2",
+      clienteId: "campanha-teste",
+      clienteNome: "CAMPANHA TESTE",
+      descricao: "Parcela a receber",
+      vencimento: new Date(2026, 5, 10),
+      dataPagamento: null,
+      valor: 400_000,
+      status: "A_RECEBER",
+    },
+  ];
+
+  const despesasTeste: DespesaCalc[] = [
+    {
+      id: "dt1",
+      fornecedorId: "f-teste",
+      fornecedorNome: "Fornecedor Teste",
+      grupoId: "g-teste",
+      grupoNome: "Prestadores de Serviço",
+      descricao: "Serviço pago",
+      vencimento: new Date(2026, 1, 1),
+      dataPagamento: new Date(2026, 1, 1),
+      valor: 250_000,
+      status: "PAGO",
+      rateio: "ESPECIFICA",
+      clienteId: "campanha-teste",
+      clienteNome: "CAMPANHA TESTE",
+    },
+    {
+      id: "dt2",
+      fornecedorId: "f-teste",
+      fornecedorNome: "Fornecedor Teste",
+      grupoId: "g-teste",
+      grupoNome: "Prestadores de Serviço",
+      descricao: "Serviço a pagar",
+      vencimento: new Date(2026, 6, 1),
+      dataPagamento: null,
+      valor: 150_000,
+      status: "A_PAGAR",
+      rateio: "ESPECIFICA",
+      clienteId: "campanha-teste",
+      clienteNome: "CAMPANHA TESTE",
+    },
+  ];
+
+  it("resumoExecutivo() reproduz os 10 números exigidos, exatamente", () => {
+    const r = resumoExecutivo(receitasTeste, despesasTeste);
+
+    expect(r.receitaContratada).toBe(1_000_000); // Contratado
+    expect(r.receitaRecebida).toBe(600_000); // Recebido
+    expect(r.receitaAReceber).toBe(400_000); // A receber
+    expect(r.despesaTotal).toBe(400_000); // Custos contratados
+    expect(r.despesaPaga).toBe(250_000); // Custos pagos
+    expect(r.despesaAPagar).toBe(150_000); // Custos a pagar
+    expect(r.resultadoProjetado).toBe(600_000); // Resultado projetado
+    expect(r.caixaRealizado).toBe(350_000); // Resultado realizado
+    expect(r.margemProjetada).toBeCloseTo(0.6, 6); // Margem projetada: 60%
+    expect(r.margemReal).toBeCloseTo(350_000 / 600_000, 6); // Margem realizada: 58,33%
+  });
+
+  it("resultadoPorCampanha() e resumoPorCliente() concordam com resumoExecutivo() para essa campanha isolada", () => {
+    const linhas = resultadoPorCampanha(receitasTeste, despesasTeste, campanhaTeste);
+    const linha = linhas.find((l) => l.clienteId === "campanha-teste")!;
+
+    expect(linha.receita).toBe(1_000_000);
+    expect(linha.despesaEspecifica).toBe(400_000);
+    expect(linha.rateioTodas).toBe(0); // não é candidato — sem rateio de despesas "TODAS"
+    expect(linha.resultado).toBe(600_000);
+    expect(linha.receitaRecebida).toBe(600_000);
+    expect(linha.resultadoReal).toBe(350_000);
+    expect(linha.margemReal).toBeCloseTo(350_000 / 600_000, 6);
+
+    const resumo = resumoPorCliente(linha, despesasTeste, receitasTeste);
+    expect(resumo.margemProjetada).toBeCloseTo(0.6, 6);
+    expect(resumo.margemReal).toBeCloseTo(350_000 / 600_000, 6);
+    expect(resumo.caixaRealizado).toBe(350_000);
+  });
+});

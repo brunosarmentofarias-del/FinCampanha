@@ -51,7 +51,10 @@ export default async function DashboardPage({
   // filtramos só a linha exibida, nunca os lançamentos usados para calcular a proporção.
   const resultadoCampanhas = resultadoPorCampanha(receitas, despesas, clientes);
   const naoAlocadas = despesas.filter((d) => d.rateio === "NAO_ALOCADA");
-  const totalNaoAlocado = naoAlocadas.reduce((acc, d) => acc + d.valor, 0);
+  // Mesmo valor que a linha "Não alocado" do gráfico — nunca recalculado à parte
+  // (ver auditoria financeira, seção "cálculo centralizado").
+  const totalNaoAlocado =
+    resultadoCampanhas.find((l) => l.clienteId === null)?.despesaEspecifica ?? 0;
 
   const clienteSelecionado = clienteIdFiltro
     ? clientes.find((c) => c.id === clienteIdFiltro)
