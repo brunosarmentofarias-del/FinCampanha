@@ -26,6 +26,57 @@ function exportarCsv(meses: FluxoMes[], nomeArquivo: string, colunaChave: string
   URL.revokeObjectURL(url);
 }
 
+function totalGeralPorChave(meses: FluxoMes[]): { chave: string; valor: number }[] {
+  const totais = new Map<string, number>();
+  for (const m of meses) {
+    for (const item of m.itens) {
+      totais.set(item.chave, (totais.get(item.chave) ?? 0) + item.valor);
+    }
+  }
+  return Array.from(totais.entries())
+    .map(([chave, valor]) => ({ chave, valor }))
+    .sort((a, b) => b.valor - a.valor);
+}
+
+function ResumoPorChave({ meses, colunaChave }: { meses: FluxoMes[]; colunaChave: string }) {
+  const totais = totalGeralPorChave(meses);
+  const totalGeral = soma(totais.map((t) => t.valor));
+
+  if (totais.length === 0) return null;
+
+  return (
+    <Card>
+      <CardContent className="pt-4">
+        <p className="mb-2 text-sm font-medium">Total geral por {colunaChave.toLowerCase()} (todos os meses)</p>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-muted-foreground">
+              <th className="pb-1 font-normal">{colunaChave}</th>
+              <th className="pb-1 text-right font-normal">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {totais.map((t) => (
+              <tr key={t.chave}>
+                <td className="py-0.5">{t.chave}</td>
+                <td className="py-0.5 text-right tabular-nums">{formatCurrency(t.valor)}</td>
+              </tr>
+            ))}
+            <tr className="border-t font-semibold">
+              <td className="py-1">Total</td>
+              <td className="py-1 text-right tabular-nums">{formatCurrency(totalGeral)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function soma(valores: number[]): number {
+  return valores.reduce((acc, v) => acc + v, 0);
+}
+
 function FluxoList({ meses, colunaChave, nomeArquivo }: { meses: FluxoMes[]; colunaChave: string; nomeArquivo: string }) {
   const [abertos, setAbertos] = useState<Set<string>>(new Set());
 
@@ -49,6 +100,7 @@ function FluxoList({ meses, colunaChave, nomeArquivo }: { meses: FluxoMes[]; col
           <Download className="mr-1 h-4 w-4" /> Exportar CSV
         </Button>
       </div>
+      <ResumoPorChave meses={meses} colunaChave={colunaChave} />
       <div className="space-y-2">
         {meses.map((m) => {
           const aberto = abertos.has(m.mes);
@@ -97,11 +149,49 @@ function FluxoList({ meses, colunaChave, nomeArquivo }: { meses: FluxoMes[]; col
   );
 }
 
+function FluxoPagarComAgrupamento({
+  fluxoPagar,
+  fluxoPagarPorCliente,
+}: {
+  fluxoPagar: FluxoMes[];
+  fluxoPagarPorCliente: FluxoMes[];
+}) {
+  const [agrupamento, setAgrupamento] = useState<"fornecedor" | "cliente">("fornecedor");
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <Button
+          variant={agrupamento === "fornecedor" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setAgrupamento("fornecedor")}
+        >
+          Por Fornecedor
+        </Button>
+        <Button
+          variant={agrupamento === "cliente" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setAgrupamento("cliente")}
+        >
+          Por Cliente
+        </Button>
+      </div>
+      {agrupamento === "fornecedor" ? (
+        <FluxoList meses={fluxoPagar} colunaChave="Fornecedor" nomeArquivo="fluxo-a-pagar-fornecedor.csv" />
+      ) : (
+        <FluxoList meses={fluxoPagarPorCliente} colunaChave="Cliente" nomeArquivo="fluxo-a-pagar-cliente.csv" />
+      )}
+    </div>
+  );
+}
+
 export function FluxoTabs({
   fluxoPagar,
+  fluxoPagarPorCliente,
   fluxoReceber,
 }: {
   fluxoPagar: FluxoMes[];
+  fluxoPagarPorCliente: FluxoMes[];
   fluxoReceber: FluxoMes[];
 }) {
   return (
@@ -111,7 +201,7 @@ export function FluxoTabs({
         <TabsTrigger value="receber">A Receber</TabsTrigger>
       </TabsList>
       <TabsContent value="pagar" className="pt-4">
-        <FluxoList meses={fluxoPagar} colunaChave="Fornecedor" nomeArquivo="fluxo-a-pagar.csv" />
+        <FluxoPagarComAgrupamento fluxoPagar={fluxoPagar} fluxoPagarPorCliente={fluxoPagarPorCliente} />
       </TabsContent>
       <TabsContent value="receber" className="pt-4">
         <FluxoList meses={fluxoReceber} colunaChave="Cliente" nomeArquivo="fluxo-a-receber.csv" />

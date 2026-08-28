@@ -32,10 +32,12 @@ interface FornecedorRow {
 
 export function FornecedoresTable({
   linhas,
-  isAdmin = false,
+  podeEditar = false,
+  podeExcluir = false,
 }: {
   linhas: FornecedorRow[];
-  isAdmin?: boolean;
+  podeEditar?: boolean;
+  podeExcluir?: boolean;
 }) {
   const router = useRouter();
   const [dialogAberto, setDialogAberto] = useState(false);
@@ -83,7 +85,7 @@ export function FornecedoresTable({
 
   return (
     <div className="space-y-4">
-      {isAdmin && (
+      {podeEditar && (
         <div className="flex justify-end">
           <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
             <DialogTrigger
@@ -168,8 +170,8 @@ export function FornecedoresTable({
                   {formatCurrency(f.totalDespesas)}
                 </TableCell>
                 <TableCell>
-                  {isAdmin && (
-                    <div className="flex justify-end gap-1">
+                  <div className="flex justify-end gap-1">
+                    {podeEditar && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -181,11 +183,13 @@ export function FornecedoresTable({
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
+                    )}
+                    {podeExcluir && (
                       <Button variant="ghost" size="icon" onClick={() => excluir(f)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

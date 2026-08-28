@@ -30,7 +30,11 @@ export default async function ClientesPage() {
           <p className="text-sm text-muted-foreground">Campanhas e serviços específicos, com mini-P&amp;L.</p>
         </div>
       </div>
-      <ClientesTable linhas={linhas} isAdmin={session?.user?.role === "ADMIN"} />
+      <ClientesTable
+        linhas={linhas}
+        podeEditar={!!session?.user}
+        podeExcluir={session?.user?.role === "ADMIN"}
+      />
     </div>
   );
 }

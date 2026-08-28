@@ -350,7 +350,8 @@ function chaveMes(data: Date): string {
 export function fluxoPorMes(
   tipo: "PAGAR" | "RECEBER",
   despesas: DespesaCalc[],
-  receitas: ReceitaCalc[]
+  receitas: ReceitaCalc[],
+  agruparPorCliente = false
 ): FluxoMes[] {
   const grupos = new Map<string, Map<string, number>>();
 
@@ -360,7 +361,9 @@ export function fluxoPorMes(
       const mes = chaveMes(d.vencimento);
       if (!grupos.has(mes)) grupos.set(mes, new Map());
       const porChave = grupos.get(mes)!;
-      porChave.set(d.fornecedorNome, (porChave.get(d.fornecedorNome) ?? 0) + d.valor);
+      // rateio TODAS/NAO_ALOCADA não tem clienteId — mesmo rótulo usado em resultadoPorCampanha().
+      const chave = agruparPorCliente ? (d.clienteNome ?? "Não alocado") : d.fornecedorNome;
+      porChave.set(chave, (porChave.get(chave) ?? 0) + d.valor);
     }
   } else {
     for (const r of receitas) {

@@ -36,7 +36,15 @@ interface Linha {
   resultado: ResultadoCampanha | null;
 }
 
-export function ClientesTable({ linhas, isAdmin = false }: { linhas: Linha[]; isAdmin?: boolean }) {
+export function ClientesTable({
+  linhas,
+  podeEditar = false,
+  podeExcluir = false,
+}: {
+  linhas: Linha[];
+  podeEditar?: boolean;
+  podeExcluir?: boolean;
+}) {
   const router = useRouter();
   const [dialogAberto, setDialogAberto] = useState(false);
   const [editando, setEditando] = useState<ClienteRow | null>(null);
@@ -106,7 +114,7 @@ export function ClientesTable({ linhas, isAdmin = false }: { linhas: Linha[]; is
 
   return (
     <div className="space-y-4">
-      {isAdmin && (
+      {podeEditar && (
         <div className="flex justify-end">
           <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
             <DialogTrigger render={<Button onClick={abrirNovo} />}>
@@ -172,7 +180,7 @@ export function ClientesTable({ linhas, isAdmin = false }: { linhas: Linha[]; is
                 <TableCell>
                   <Switch
                     checked={cliente.isCandidato}
-                    disabled={!isAdmin}
+                    disabled={!podeEditar}
                     onCheckedChange={(v) => toggleCandidato(cliente, v)}
                   />
                 </TableCell>
@@ -215,16 +223,18 @@ export function ClientesTable({ linhas, isAdmin = false }: { linhas: Linha[]; is
                   {resultado?.margemReal == null ? "—" : formatPercent(resultado.margemReal)}
                 </TableCell>
                 <TableCell>
-                  {isAdmin && (
-                    <div className="flex justify-end gap-1">
+                  <div className="flex justify-end gap-1">
+                    {podeEditar && (
                       <Button variant="ghost" size="icon" onClick={() => abrirEdicao(cliente)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
+                    )}
+                    {podeExcluir && (
                       <Button variant="ghost" size="icon" onClick={() => excluir(cliente)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

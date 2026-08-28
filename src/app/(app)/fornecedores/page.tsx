@@ -26,7 +26,11 @@ export default async function FornecedoresPage() {
         <h1 className="text-xl font-semibold">Fornecedores</h1>
         <p className="text-sm text-muted-foreground">Prestadores de serviço e fornecedores da campanha.</p>
       </div>
-      <FornecedoresTable linhas={linhas} isAdmin={session?.user?.role === "ADMIN"} />
+      <FornecedoresTable
+        linhas={linhas}
+        podeEditar={!!session?.user}
+        podeExcluir={session?.user?.role === "ADMIN"}
+      />
     </div>
   );
 }
