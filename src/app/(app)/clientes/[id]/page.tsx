@@ -63,7 +63,7 @@ export default async function ClienteDetalhePage({
       {linha.rateioTodas > 0 && (
         <p className="text-xs text-muted-foreground">
           Despesa Total e Resultado acima incluem {formatCurrency(linha.rateioTodas)} de rateio de despesas
-          compartilhadas ("TODAS" as campanhas) — os lançamentos individuais abaixo mostram só as despesas
+          compartilhadas (&quot;TODAS&quot; as campanhas) — os lançamentos individuais abaixo mostram só as despesas
           específicas desta campanha.
         </p>
       )}

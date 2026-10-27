@@ -16,13 +16,17 @@ function iniciais(nome: string): string {
   return primeiras.join("") || "?";
 }
 
+const LABEL_PAPEL: Record<string, string> = { ADMIN: "Administrador", FINANCEIRO: "Financeiro" };
+
 export function UserMenu({
   nome,
   email,
+  role,
   onSignOut,
 }: {
   nome: string;
   email: string;
+  role?: string;
   onSignOut: () => void;
 }) {
   return (
@@ -40,7 +44,9 @@ export function UserMenu({
         </span>
         <span className="hidden text-left leading-tight sm:block">
           <span className="block text-sm font-medium">{nome}</span>
-          <span className="block text-xs text-muted-foreground">Administrador</span>
+          <span className="block text-xs text-muted-foreground">
+            {(role && LABEL_PAPEL[role]) ?? "Usuário"}
+          </span>
         </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">

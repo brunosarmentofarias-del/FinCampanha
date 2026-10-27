@@ -31,9 +31,11 @@ export async function GET() {
     resumoSheet.addRow({ indicador, valor });
   }
   resumoSheet.addRow({ indicador: "Margem Projetada", valor: data.resumo.margemProjetada });
+  resumoSheet.addRow({ indicador: "Margem Real", valor: data.resumo.margemReal });
   resumoSheet.getColumn("valor").numFmt = MOEDA;
   resumoSheet.getRow(1).font = { bold: true };
   resumoSheet.getCell(`B${linhasResumo.length + 2}`).numFmt = "0.0%";
+  resumoSheet.getCell(`B${linhasResumo.length + 3}`).numFmt = "0.0%";
 
   // Despesas por Grupo
   const grupoSheet = wb.addWorksheet("Despesas por Grupo");

@@ -53,8 +53,9 @@ export async function Topbar({
           <HelpMenu />
           <NotificationsMenu alertas={alertas} />
           <UserMenu
-            nome={userName || "Administrador"}
+            nome={userName || userEmail || "Usuário"}
             email={userEmail ?? ""}
+            role={role}
             onSignOut={encerrarSessao}
           />
         </div>
