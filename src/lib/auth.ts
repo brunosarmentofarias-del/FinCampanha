@@ -28,8 +28,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt: ({ token, user }) => {
-      if (user) token.role = user.role;
+    // O JWT dura dias; sem esta revalidação, um usuário excluído continuaria logado
+    // até o token expirar. Consulta o banco no máximo a cada 5 min por sessão.
+    jwt: async ({ token, user }) => {
+      if (user) {
+        token.role = user.role;
+        token.verificadoEm = Date.now();
+        return token;
+      }
+      if (token.sub && Date.now() - (token.verificadoEm ?? 0) > 5 * 60 * 1000) {
+        const atual = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: { role: true },
+        });
+        if (!atual) return null;
+        token.role = atual.role;
+        token.verificadoEm = Date.now();
+      }
       return token;
     },
     session: ({ session, token }) => {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, ShieldCheck, Trash2, UserCog } from "lucide-react";
+import { KeyRound, Plus, ShieldCheck, Trash2, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,7 @@ export function UsuariosTable({
   const [dialogAberto, setDialogAberto] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [role, setRole] = useState<"ADMIN" | "FINANCEIRO">("FINANCEIRO");
+  const [senhaAlvo, setSenhaAlvo] = useState<UsuarioRow | null>(null);
 
   async function salvar(formData: FormData) {
     setSalvando(true);
@@ -73,6 +74,27 @@ export function UsuariosTable({
       setDialogAberto(false);
       setRole("FINANCEIRO");
       router.refresh();
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function trocarSenha(formData: FormData) {
+    if (!senhaAlvo) return;
+    setSalvando(true);
+    try {
+      const res = await fetch(`/api/usuarios/${senhaAlvo.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ senha: formData.get("novaSenha") }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.erro?.fieldErrors?.senha?.[0] ?? data.erro ?? "Falha ao trocar a senha");
+        return;
+      }
+      toast.success("Senha atualizada");
+      setSenhaAlvo(null);
     } finally {
       setSalvando(false);
     }
@@ -145,7 +167,7 @@ export function UsuariosTable({
               <TableHead>E-mail</TableHead>
               <TableHead>Papel</TableHead>
               <TableHead>Criado em</TableHead>
-              <TableHead className="w-16" />
+              <TableHead className="w-24" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -170,17 +192,47 @@ export function UsuariosTable({
                 </TableCell>
                 <TableCell className="text-muted-foreground">{formatDate(u.createdAt)}</TableCell>
                 <TableCell>
-                  {u.id !== usuarioAtualId && (
-                    <Button variant="ghost" size="icon" onClick={() => excluir(u)}>
-                      <Trash2 className="h-4 w-4" />
+                  <div className="flex justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Trocar senha"
+                      onClick={() => setSenhaAlvo(u)}
+                    >
+                      <KeyRound className="h-4 w-4" />
                     </Button>
-                  )}
+                    {u.id !== usuarioAtualId && (
+                      <Button variant="ghost" size="icon" title="Remover acesso" onClick={() => excluir(u)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={senhaAlvo !== null} onOpenChange={(aberto) => !aberto && setSenhaAlvo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Trocar senha — {senhaAlvo?.nome ?? senhaAlvo?.email}</DialogTitle>
+          </DialogHeader>
+          <form action={trocarSenha} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="novaSenha">Nova senha</Label>
+              <Input id="novaSenha" name="novaSenha" type="password" minLength={8} required />
+              <p className="text-xs text-muted-foreground">Pelo menos 8 caracteres.</p>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={salvando}>
+                {salvando ? "Salvando..." : "Salvar senha"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

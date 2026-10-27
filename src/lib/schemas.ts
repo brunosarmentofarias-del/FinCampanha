@@ -80,7 +80,11 @@ export const usuarioSchema = z.object({
   role: z.enum(["ADMIN", "FINANCEIRO"]),
 });
 
-export type ClienteInput = z.infer<typeof clienteSchema>;
+export const trocaSenhaSchema = z.object({
+  senha: z.string().min(8, "Senha deve ter pelo menos 8 caracteres").max(100),
+});
+
+export type ClienteInput =z.infer<typeof clienteSchema>;
 export type FornecedorInput = z.infer<typeof fornecedorSchema>;
 export type GrupoDespesaInput = z.infer<typeof grupoDespesaSchema>;
 export type ReceitaInput = z.infer<typeof receitaSchema>;
