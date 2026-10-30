@@ -1,11 +1,21 @@
 import { z } from "zod";
 
-export const clienteSchema = z.object({
+const clienteCampos = {
   nome: z.string().trim().min(1, "Nome é obrigatório").max(50),
   nomeCompleto: z.string().trim().max(200).nullable().optional(),
+};
+
+export const clienteSchema = z.object({
+  ...clienteCampos,
   isCandidato: z.boolean().default(true),
   ativo: z.boolean().default(true),
 });
+
+// Edição parcial: SEM default. Com clienteSchema.partial() o Zod ainda aplicaria o default(true)
+// e um PATCH só do nome (ou do toggle Candidato) religaria isCandidato/ativo sem ninguém pedir.
+export const clientePatchSchema = z
+  .object({ ...clienteCampos, isCandidato: z.boolean(), ativo: z.boolean() })
+  .partial();
 
 // "tipo" não é mais um campo do formulário — é inferido no servidor a partir do
 // documento (11 dígitos = CPF/PF, 14 dígitos = CNPJ/PJ). Ver src/lib/documento.ts.
@@ -75,7 +85,7 @@ export const despesaSchema = z
 
 export const usuarioSchema = z.object({
   nome: z.string().trim().min(1, "Nome é obrigatório").max(100),
-  email: z.string().trim().email("E-mail inválido").max(200),
+  email: z.string().trim().toLowerCase().email("E-mail inválido").max(200),
   senha: z.string().min(8, "Senha deve ter pelo menos 8 caracteres").max(100),
   role: z.enum(["ADMIN", "FINANCEIRO"]),
 });

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpDown, CheckCircle2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { chamarApi } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -115,9 +116,9 @@ export function ReceitasTable({
 
   async function excluir(r: ReceitaRow) {
     if (!confirm(`Excluir a receita "${r.descricao}"?`)) return;
-    const res = await fetch(`/api/receitas/${r.id}`, { method: "DELETE" });
+    const res = await chamarApi(`/api/receitas/${r.id}`, { method: "DELETE" });
     if (!res.ok) {
-      toast.error("Falha ao excluir");
+      toast.error(res.mensagem);
       return;
     }
     toast.success("Receita excluída");
@@ -133,13 +134,13 @@ export function ReceitasTable({
       toast.error("Data inválida");
       return;
     }
-    const res = await fetch(`/api/receitas/${r.id}/baixa`, {
+    const res = await chamarApi(`/api/receitas/${r.id}/baixa`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dataPagamento: `${yyyy}-${mm}-${dd}` }),
     });
     if (!res.ok) {
-      toast.error("Falha ao dar baixa");
+      toast.error(res.mensagem);
       return;
     }
     toast.success("Receita marcada como recebida");
@@ -160,14 +161,13 @@ export function ReceitasTable({
       idempotencyKey: editando ? undefined : idempotencyKey,
     };
     try {
-      const res = await fetch(editando ? `/api/receitas/${editando.id}` : "/api/receitas", {
+      const res = await chamarApi(editando ? `/api/receitas/${editando.id}` : "/api/receitas", {
         method: editando ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
       if (!res.ok) {
-        toast.error(data.erro?.formErrors?.[0] ?? "Falha ao salvar. Confira os campos.");
+        toast.error(res.mensagem);
         return;
       }
       if (!editando) setIdempotencyKey(crypto.randomUUID());

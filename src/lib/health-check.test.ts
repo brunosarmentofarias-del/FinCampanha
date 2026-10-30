@@ -58,61 +58,83 @@ describe("financialHealthCheck (integração com Postgres/Neon)", () => {
     await prisma.receita.deleteMany({});
   });
 
-  it("detecta rateio ESPECIFICA sem clienteId (só possível escrevendo direto no banco)", async () => {
-    // $executeRaw contorna o Zod/Prisma TS de propósito, simulando um script ou
-    // migração de dados que escreva direto no banco sem passar pela API.
-    const id = "test-rateio-invalido-1";
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO "Despesa" (id, "fornecedorId", "grupoId", descricao, vencimento, valor, status, rateio, "clienteId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, 'Despesa quebrada', '2026-09-01', '50', 'A_PAGAR', 'ESPECIFICA', NULL, now(), now())`,
-      id,
-      fornecedorId,
-      grupoId
-    );
+  // As regras abaixo agora são garantidas pelo PRÓPRIO BANCO (CHECK na migration
+  // 20261030160000_endurecimento_banco): nem um script que escreva direto no banco consegue
+  // gravar estes estados. O health-check continua como rede de segurança para dado legado.
+  const VIOLACAO = /23514|check constraint/i;
 
-    const ocorrencias = await financialHealthCheck(prisma);
-    const achado = ocorrencias.find((o) => o.categoria === "rateio_inconsistente");
-    expect(achado).toBeTruthy();
-    expect(achado!.severidade).toBe("CRITICO");
-    expect(achado!.registros).toContain(id);
-
-    await prisma.$executeRawUnsafe('DELETE FROM "Despesa" WHERE id = $1', id);
+  it("o banco recusa rateio ESPECIFICA sem clienteId", async () => {
+    await expect(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO "Despesa" (id, "fornecedorId", "grupoId", descricao, vencimento, valor, status, rateio, "clienteId", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, 'Despesa quebrada', '2026-09-01', '50', 'A_PAGAR', 'ESPECIFICA', NULL, now(), now())`,
+        "test-rateio-invalido-1",
+        fornecedorId,
+        grupoId
+      )
+    ).rejects.toThrow(VIOLACAO);
+    expect(await financialHealthCheck(prisma)).toHaveLength(0);
   });
 
-  it("detecta status PAGO sem data de pagamento", async () => {
-    const id = "test-pago-sem-data-1";
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO "Despesa" (id, "fornecedorId", "grupoId", descricao, vencimento, "dataPagamento", valor, status, rateio, "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, 'Paga sem data', '2026-09-01', NULL, '50', 'PAGO', 'TODAS', now(), now())`,
-      id,
-      fornecedorId,
-      grupoId
-    );
-
-    const ocorrencias = await financialHealthCheck(prisma);
-    const achado = ocorrencias.find((o) => o.categoria === "status_sem_data");
-    expect(achado).toBeTruthy();
-    expect(achado!.registros).toContain(id);
-
-    await prisma.$executeRawUnsafe('DELETE FROM "Despesa" WHERE id = $1', id);
+  it("o banco recusa rateio TODAS com clienteId", async () => {
+    await expect(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO "Despesa" (id, "fornecedorId", "grupoId", descricao, vencimento, valor, status, rateio, "clienteId", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, 'Despesa quebrada', '2026-09-01', '50', 'A_PAGAR', 'TODAS', $4, now(), now())`,
+        "test-rateio-invalido-2",
+        fornecedorId,
+        grupoId,
+        clienteId
+      )
+    ).rejects.toThrow(VIOLACAO);
   });
 
-  it("detecta valor <= 0", async () => {
-    const id = "test-valor-zero-1";
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO "Despesa" (id, "fornecedorId", "grupoId", descricao, vencimento, valor, status, rateio, "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, 'Valor zerado', '2026-09-01', '0', 'A_PAGAR', 'TODAS', now(), now())`,
-      id,
-      fornecedorId,
-      grupoId
-    );
+  it("o banco recusa status PAGO sem data de pagamento", async () => {
+    await expect(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO "Despesa" (id, "fornecedorId", "grupoId", descricao, vencimento, "dataPagamento", valor, status, rateio, "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, 'Paga sem data', '2026-09-01', NULL, '50', 'PAGO', 'TODAS', now(), now())`,
+        "test-pago-sem-data-1",
+        fornecedorId,
+        grupoId
+      )
+    ).rejects.toThrow(VIOLACAO);
+  });
 
-    const ocorrencias = await financialHealthCheck(prisma);
-    const achado = ocorrencias.find((o) => o.categoria === "valor_invalido");
-    expect(achado).toBeTruthy();
-    expect(achado!.severidade).toBe("CRITICO");
-    expect(achado!.registros).toContain(id);
+  it("o banco recusa valor <= 0 (despesa e receita)", async () => {
+    await expect(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO "Despesa" (id, "fornecedorId", "grupoId", descricao, vencimento, valor, status, rateio, "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, 'Valor zerado', '2026-09-01', '0', 'A_PAGAR', 'TODAS', now(), now())`,
+        "test-valor-zero-1",
+        fornecedorId,
+        grupoId
+      )
+    ).rejects.toThrow(VIOLACAO);
+    await expect(
+      prisma.receita.create({
+        data: { clienteId, descricao: "Receita negativa", vencimento: new Date("2026-09-01"), valor: -5, status: "A_RECEBER" },
+      })
+    ).rejects.toThrow();
+  });
 
-    await prisma.$executeRawUnsafe('DELETE FROM "Despesa" WHERE id = $1', id);
+  it("o banco recusa excluir cliente que ainda tem lançamentos (FK RESTRICT)", async () => {
+    await prisma.despesa.create({
+      data: {
+        fornecedorId,
+        grupoId,
+        clienteId,
+        descricao: "Vinculada",
+        vencimento: new Date("2026-09-01"),
+        valor: 10,
+        status: "A_PAGAR",
+        rateio: "ESPECIFICA",
+      },
+    });
+    await expect(prisma.cliente.delete({ where: { id: clienteId } })).rejects.toThrow();
+    // a despesa continua específica e ligada ao cliente (antes: o banco anulava o clienteId)
+    const despesa = await prisma.despesa.findFirst({ where: { descricao: "Vinculada" } });
+    expect(despesa?.clienteId).toBe(clienteId);
+    await prisma.despesa.deleteMany({});
   });
 });

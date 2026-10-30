@@ -20,11 +20,22 @@ export function testDatabaseUrl(): string {
 }
 
 export function prepararSchemaTeste(): void {
-  execSync("npx prisma db push --skip-generate --accept-data-loss", {
-    cwd: path.resolve(__dirname, "../.."),
-    env: { ...process.env, DATABASE_URL: testDatabaseUrl(), DIRECT_URL: testDatabaseUrl() },
-    stdio: "pipe",
-  });
+  // O branch de testes do Neon dorme por inatividade: a 1ª conexão pode falhar com P1001
+  // enquanto ele acorda. Tenta de novo algumas vezes antes de desistir.
+  const tentativas = 5;
+  for (let i = 1; i <= tentativas; i++) {
+    try {
+      execSync("npx prisma db push --skip-generate --accept-data-loss", {
+        cwd: path.resolve(__dirname, "../.."),
+        env: { ...process.env, DATABASE_URL: testDatabaseUrl(), DIRECT_URL: testDatabaseUrl() },
+        stdio: "pipe",
+      });
+      return;
+    } catch (e) {
+      if (i === tentativas) throw e;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 4000);
+    }
+  }
 }
 
 export function criarClienteTeste(): PrismaClient {

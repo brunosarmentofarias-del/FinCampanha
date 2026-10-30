@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fornecedorSchema } from "@/lib/schemas";
 import { inferirTipoFornecedor } from "@/lib/documento";
-import { requireAdmin } from "@/lib/require-role";
+import { comApi } from "@/lib/api";
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+type Ctx = { params: Promise<{ id: string }> };
+
+export const PATCH = comApi(async (req, { params }: Ctx) => {
   const { id } = await params;
-  const body = await req.json();
-  const parsed = fornecedorSchema.partial().safeParse(body);
+  const parsed = fornecedorSchema.partial().safeParse(await req.json());
   if (!parsed.success) {
     return NextResponse.json({ erro: parsed.error.flatten() }, { status: 400 });
   }
@@ -19,20 +20,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     data: tipoInferido ? { ...parsed.data, tipo: tipoInferido } : parsed.data,
   });
   return NextResponse.json(fornecedor);
-}
+});
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const bloqueio = await requireAdmin();
-  if (bloqueio) return bloqueio;
-
-  const { id } = await params;
-  const despesas = await prisma.despesa.count({ where: { fornecedorId: id } });
-  if (despesas > 0) {
-    return NextResponse.json(
-      { erro: "Não é possível excluir: existem despesas vinculadas a este fornecedor." },
-      { status: 409 }
-    );
-  }
-  await prisma.fornecedor.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
-}
+export const DELETE = comApi(
+  async (_req, { params }: Ctx) => {
+    const { id } = await params;
+    const despesas = await prisma.despesa.count({ where: { fornecedorId: id } });
+    if (despesas > 0) {
+      return NextResponse.json(
+        { erro: "Não é possível excluir: existem despesas vinculadas a este fornecedor." },
+        { status: 409 }
+      );
+    }
+    await prisma.fornecedor.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  },
+  { admin: true }
+);

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { chamarApi } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -61,13 +62,13 @@ export function ClientesTable({
   }
 
   async function toggleCandidato(c: ClienteRow, valor: boolean) {
-    const res = await fetch(`/api/clientes/${c.id}`, {
+    const res = await chamarApi(`/api/clientes/${c.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isCandidato: valor }),
     });
     if (!res.ok) {
-      toast.error("Falha ao atualizar");
+      toast.error(res.mensagem);
       return;
     }
     router.refresh();
@@ -75,10 +76,9 @@ export function ClientesTable({
 
   async function excluir(c: ClienteRow) {
     if (!confirm(`Excluir o cliente "${c.nome}"?`)) return;
-    const res = await fetch(`/api/clientes/${c.id}`, { method: "DELETE" });
-    const data = await res.json();
+    const res = await chamarApi(`/api/clientes/${c.id}`, { method: "DELETE" });
     if (!res.ok) {
-      toast.error(data.erro ?? "Falha ao excluir");
+      toast.error(res.mensagem);
       return;
     }
     toast.success("Cliente excluído");
@@ -94,14 +94,13 @@ export function ClientesTable({
       ativo: formData.get("ativo") === "on",
     };
     try {
-      const res = await fetch(editando ? `/api/clientes/${editando.id}` : "/api/clientes", {
+      const res = await chamarApi(editando ? `/api/clientes/${editando.id}` : "/api/clientes", {
         method: editando ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
       if (!res.ok) {
-        toast.error(data.erro?.formErrors?.[0] ?? "Falha ao salvar");
+        toast.error(res.mensagem);
         return;
       }
       toast.success("Cliente salvo");

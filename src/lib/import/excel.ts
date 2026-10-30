@@ -204,7 +204,6 @@ function contemTexto(row: unknown[], alvo: string): boolean {
   );
 }
 
-const HEADER_ROW_INDEX = 3; // linha 4 (1-indexed) = índice 3
 const DATA_START_INDEX = 4; // linha 5 (1-indexed) = índice 4
 
 export function parseReceitasSheet(sheet: XLSX.WorkSheet): {

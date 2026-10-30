@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { chamarApi } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,10 +39,9 @@ export function GruposTable({
 
   async function excluir(g: GrupoRow) {
     if (!confirm(`Excluir o grupo "${g.nome}"?`)) return;
-    const res = await fetch(`/api/grupos/${g.id}`, { method: "DELETE" });
-    const data = await res.json();
+    const res = await chamarApi(`/api/grupos/${g.id}`, { method: "DELETE" });
     if (!res.ok) {
-      toast.error(data.erro ?? "Falha ao excluir");
+      toast.error(res.mensagem);
       return;
     }
     toast.success("Grupo excluído");
@@ -52,14 +52,13 @@ export function GruposTable({
     setSalvando(true);
     const payload = { nome: formData.get("nome"), cor: formData.get("cor") || null };
     try {
-      const res = await fetch(editando ? `/api/grupos/${editando.id}` : "/api/grupos", {
+      const res = await chamarApi(editando ? `/api/grupos/${editando.id}` : "/api/grupos", {
         method: editando ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
       if (!res.ok) {
-        toast.error(data.erro?.formErrors?.[0] ?? "Falha ao salvar");
+        toast.error(res.mensagem);
         return;
       }
       toast.success("Grupo salvo");

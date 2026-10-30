@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { despesaSchema } from "@/lib/schemas";
+import { comApi } from "@/lib/api";
 import { criarIdempotente } from "@/lib/idempotent-create";
 
-export async function GET(req: NextRequest) {
+export const GET = comApi(async (req) => {
   const clienteId = req.nextUrl.searchParams.get("cliente");
   const status = req.nextUrl.searchParams.get("status");
   const grupoId = req.nextUrl.searchParams.get("grupo");
@@ -21,15 +22,15 @@ export async function GET(req: NextRequest) {
           ? rateio
           : undefined,
     },
-    include: { fornecedor: true, grupo: true, cliente: true },
+    // Só id e nome do fornecedor: CPF/CNPJ não precisa sair numa listagem de despesas.
+    include: { fornecedor: { select: { id: true, nome: true } }, grupo: true, cliente: true },
     orderBy: { vencimento: "asc" },
   });
   return NextResponse.json(despesas);
-}
+});
 
-export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const parsed = despesaSchema.safeParse(body);
+export const POST = comApi(async (req) => {
+  const parsed = despesaSchema.safeParse(await req.json());
   if (!parsed.success) {
     return NextResponse.json({ erro: parsed.error.flatten() }, { status: 400 });
   }
@@ -42,4 +43,4 @@ export async function POST(req: NextRequest) {
     parsed.data.idempotencyKey
   );
   return NextResponse.json(registro, { status: duplicataEvitada ? 200 : 201 });
-}
+});

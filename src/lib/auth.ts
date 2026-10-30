@@ -3,6 +3,12 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
+// 5 senhas erradas seguidas bloqueiam o e-mail por 15 minutos.
+const MAX_FALHAS = 5;
+const JANELA_BLOQUEIO_MS = 15 * 60 * 1000;
+// Hash descartável (de um valor aleatório) só para igualar o tempo quando o e-mail não existe.
+const HASH_FALSO = "$2b$10$..zTrrmGLqVRTJ/9e6Sx1e22nP8j.xGw0zopnlQI1BiygZZu1ySrS";
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
@@ -13,16 +19,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Senha", type: "password" },
       },
       authorize: async (credentials) => {
-        const email = credentials?.email;
+        const emailBruto = credentials?.email;
         const password = credentials?.password;
-        if (typeof email !== "string" || typeof password !== "string") return null;
+        if (typeof emailBruto !== "string" || typeof password !== "string") return null;
+        const email = emailBruto.trim().toLowerCase().slice(0, 200);
+
+        // Bloqueio temporário por e-mail contra força bruta (ver LoginTentativa no schema).
+        const desde = new Date(Date.now() - JANELA_BLOQUEIO_MS);
+        const falhasRecentes = await prisma.loginTentativa.count({
+          where: { email, createdAt: { gte: desde } },
+        });
+        if (falhasRecentes >= MAX_FALHAS) return null;
 
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) return null;
+        // Compara mesmo sem usuário, para o tempo de resposta não revelar se o e-mail existe.
+        const senhaValida = await bcrypt.compare(password, user?.passwordHash ?? HASH_FALSO);
 
-        const senhaValida = await bcrypt.compare(password, user.passwordHash);
-        if (!senhaValida) return null;
+        if (!user || !senhaValida) {
+          await prisma.loginTentativa.create({ data: { email } });
+          await prisma.loginTentativa.deleteMany({ where: { createdAt: { lt: desde } } });
+          return null;
+        }
 
+        await prisma.loginTentativa.deleteMany({ where: { email } });
         return { id: user.id, email: user.email, name: user.nome ?? undefined, role: user.role };
       },
     }),

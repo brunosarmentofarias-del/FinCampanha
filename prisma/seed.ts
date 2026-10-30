@@ -21,15 +21,18 @@ async function main() {
     });
   }
 
-  const email = process.env.SEED_ADMIN_EMAIL ?? "admin@fincampanha.local";
-  const senha = process.env.SEED_ADMIN_PASSWORD ?? "fincampanha123";
+  const email = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
+  const senha = process.env.SEED_ADMIN_PASSWORD;
+  if (!email || !senha || senha.length < 12) {
+    throw new Error("Defina SEED_ADMIN_EMAIL e SEED_ADMIN_PASSWORD (mínimo 12 caracteres) no ambiente — não existe senha padrão.");
+  }
   const existente = await prisma.user.findUnique({ where: { email } });
   if (!existente) {
     const passwordHash = await bcrypt.hash(senha, 10);
     await prisma.user.create({
-      data: { email, passwordHash, nome: "Administrador" },
+      data: { email, passwordHash, nome: "Administrador", role: "ADMIN" },
     });
-    console.log(`Usuário admin criado: ${email} / ${senha} (troque a senha depois do primeiro login)`);
+    console.log(`Usuário admin criado: ${email}`);
   }
 
   console.log("Seed concluído: 6 grupos de despesa padrão garantidos.");

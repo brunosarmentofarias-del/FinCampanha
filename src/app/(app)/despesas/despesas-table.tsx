@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpDown, CheckCircle2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { chamarApi } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -145,9 +146,9 @@ export function DespesasTable({
 
   async function excluir(d: DespesaRow) {
     if (!confirm(`Excluir a despesa "${d.descricao}"?`)) return;
-    const res = await fetch(`/api/despesas/${d.id}`, { method: "DELETE" });
+    const res = await chamarApi(`/api/despesas/${d.id}`, { method: "DELETE" });
     if (!res.ok) {
-      toast.error("Falha ao excluir");
+      toast.error(res.mensagem);
       return;
     }
     toast.success("Despesa excluída");
@@ -163,13 +164,13 @@ export function DespesasTable({
       toast.error("Data inválida");
       return;
     }
-    const res = await fetch(`/api/despesas/${d.id}/baixa`, {
+    const res = await chamarApi(`/api/despesas/${d.id}/baixa`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dataPagamento: `${yyyy}-${mm}-${dd}` }),
     });
     if (!res.ok) {
-      toast.error("Falha ao dar baixa");
+      toast.error(res.mensagem);
       return;
     }
     toast.success("Despesa marcada como paga");
@@ -193,14 +194,13 @@ export function DespesasTable({
       idempotencyKey: editando ? undefined : idempotencyKey,
     };
     try {
-      const res = await fetch(editando ? `/api/despesas/${editando.id}` : "/api/despesas", {
+      const res = await chamarApi(editando ? `/api/despesas/${editando.id}` : "/api/despesas", {
         method: editando ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
       if (!res.ok) {
-        toast.error(data.erro?.formErrors?.[0] ?? "Falha ao salvar. Confira os campos.");
+        toast.error(res.mensagem);
         return;
       }
       if (!editando) setIdempotencyKey(crypto.randomUUID());
@@ -215,7 +215,7 @@ export function DespesasTable({
   async function classificarSelecionadas() {
     setClassificando(true);
     try {
-      const res = await fetch("/api/despesas/batch-classificar", {
+      const res = await chamarApi("/api/despesas/batch-classificar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -224,12 +224,11 @@ export function DespesasTable({
           clienteId: rateioClassificar === "ESPECIFICA" ? clienteClassificar : null,
         }),
       });
-      const data = await res.json();
       if (!res.ok) {
-        toast.error(data.erro ?? "Falha ao classificar");
+        toast.error(res.mensagem);
         return;
       }
-      toast.success(`${data.atualizadas} despesa(s) classificada(s)`);
+      toast.success(`${Number(res.data?.atualizadas ?? 0)} despesa(s) classificada(s)`);
       setSelecionadas(new Set());
       setDialogClassificar(false);
       router.refresh();
@@ -241,17 +240,16 @@ export function DespesasTable({
   async function reclassificarGrupoSelecionadas() {
     setReclassificandoGrupo(true);
     try {
-      const res = await fetch("/api/despesas/batch-classificar-grupo", {
+      const res = await chamarApi("/api/despesas/batch-classificar-grupo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: Array.from(selecionadas), grupoId: grupoDestino }),
       });
-      const data = await res.json();
       if (!res.ok) {
-        toast.error(data.erro ?? "Falha ao reclassificar");
+        toast.error(res.mensagem);
         return;
       }
-      toast.success(`${data.atualizadas} despesa(s) movida(s) de grupo`);
+      toast.success(`${Number(res.data?.atualizadas ?? 0)} despesa(s) movida(s) de grupo`);
       setSelecionadas(new Set());
       setDialogGrupo(false);
       router.refresh();

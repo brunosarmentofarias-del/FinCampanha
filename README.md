@@ -25,8 +25,8 @@ npm run db:seed              # cria os 6 grupos padrão + usuário admin
 npm run dev
 ```
 
-O seed cria o usuário `admin@fincampanha.local` / `fincampanha123` (ou as variáveis
-`SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` do `.env`). Troque a senha após o primeiro login.
+O seed cria o primeiro admin a partir de `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD` (mínimo 12
+caracteres) do `.env` — não existe senha padrão. Depois, gerencie acessos em Configurações.
 
 ## Comandos
 

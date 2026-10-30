@@ -1,34 +1,35 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { clienteSchema } from "@/lib/schemas";
-import { requireAdmin } from "@/lib/require-role";
+import { clientePatchSchema } from "@/lib/schemas";
+import { comApi } from "@/lib/api";
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+type Ctx = { params: Promise<{ id: string }> };
+
+export const PATCH = comApi(async (req, { params }: Ctx) => {
   const { id } = await params;
-  const body = await req.json();
-  const parsed = clienteSchema.partial().safeParse(body);
+  const parsed = clientePatchSchema.safeParse(await req.json());
   if (!parsed.success) {
     return NextResponse.json({ erro: parsed.error.flatten() }, { status: 400 });
   }
   const cliente = await prisma.cliente.update({ where: { id }, data: parsed.data });
   return NextResponse.json(cliente);
-}
+});
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const bloqueio = await requireAdmin();
-  if (bloqueio) return bloqueio;
-
-  const { id } = await params;
-  const [receitas, despesas] = await Promise.all([
-    prisma.receita.count({ where: { clienteId: id } }),
-    prisma.despesa.count({ where: { clienteId: id } }),
-  ]);
-  if (receitas > 0 || despesas > 0) {
-    return NextResponse.json(
-      { erro: "Não é possível excluir: existem lançamentos vinculados a este cliente." },
-      { status: 409 }
-    );
-  }
-  await prisma.cliente.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
-}
+export const DELETE = comApi(
+  async (_req, { params }: Ctx) => {
+    const { id } = await params;
+    const [receitas, despesas] = await Promise.all([
+      prisma.receita.count({ where: { clienteId: id } }),
+      prisma.despesa.count({ where: { clienteId: id } }),
+    ]);
+    if (receitas > 0 || despesas > 0) {
+      return NextResponse.json(
+        { erro: "Não é possível excluir: existem lançamentos vinculados a este cliente." },
+        { status: 409 }
+      );
+    }
+    await prisma.cliente.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  },
+  { admin: true }
+);

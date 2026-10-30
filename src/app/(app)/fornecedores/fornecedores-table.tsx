@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { chamarApi } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,10 +49,9 @@ export function FornecedoresTable({
 
   async function excluir(f: FornecedorRow) {
     if (!confirm(`Excluir o fornecedor "${f.nome}"?`)) return;
-    const res = await fetch(`/api/fornecedores/${f.id}`, { method: "DELETE" });
-    const data = await res.json();
+    const res = await chamarApi(`/api/fornecedores/${f.id}`, { method: "DELETE" });
     if (!res.ok) {
-      toast.error(data.erro ?? "Falha ao excluir");
+      toast.error(res.mensagem);
       return;
     }
     toast.success("Fornecedor excluído");
@@ -65,14 +65,13 @@ export function FornecedoresTable({
       documento: formData.get("documento") || null,
     };
     try {
-      const res = await fetch(editando ? `/api/fornecedores/${editando.id}` : "/api/fornecedores", {
+      const res = await chamarApi(editando ? `/api/fornecedores/${editando.id}` : "/api/fornecedores", {
         method: editando ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
       if (!res.ok) {
-        toast.error(data.erro?.formErrors?.[0] ?? "Falha ao salvar");
+        toast.error(res.mensagem);
         return;
       }
       toast.success("Fornecedor salvo");

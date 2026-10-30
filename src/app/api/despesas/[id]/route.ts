@@ -1,27 +1,29 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { despesaSchema } from "@/lib/schemas";
-import { requireAdmin } from "@/lib/require-role";
+import { comApi } from "@/lib/api";
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+type Ctx = { params: Promise<{ id: string }> };
+
+export const PATCH = comApi(async (req, { params }: Ctx) => {
   const { id } = await params;
-  const body = await req.json();
-  const parsed = despesaSchema.safeParse(body);
+  const parsed = despesaSchema.safeParse(await req.json());
   if (!parsed.success) {
     return NextResponse.json({ erro: parsed.error.flatten() }, { status: 400 });
   }
   const despesa = await prisma.despesa.update({
     where: { id },
-    data: { ...parsed.data, clienteId: parsed.data.clienteId ?? null },
+    // idempotencyKey só vale na criação: nunca sobrescrever numa edição.
+    data: { ...parsed.data, clienteId: parsed.data.clienteId ?? null, idempotencyKey: undefined },
   });
   return NextResponse.json(despesa);
-}
+});
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const bloqueio = await requireAdmin();
-  if (bloqueio) return bloqueio;
-
-  const { id } = await params;
-  await prisma.despesa.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
-}
+export const DELETE = comApi(
+  async (_req, { params }: Ctx) => {
+    const { id } = await params;
+    await prisma.despesa.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  },
+  { admin: true }
+);

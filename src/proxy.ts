@@ -8,6 +8,11 @@ export default auth((req) => {
 
   if (isAuthApi) return NextResponse.next();
 
+  // API: quem chama espera JSON (e o frontend precisa saber que a sessão caiu), não um redirect pra HTML.
+  if (!isLoggedIn && req.nextUrl.pathname.startsWith("/api")) {
+    return NextResponse.json({ erro: "Não autenticado" }, { status: 401 });
+  }
+
   if (!isLoggedIn && !isLoginPage) {
     const url = new URL("/login", req.nextUrl.origin);
     return NextResponse.redirect(url);

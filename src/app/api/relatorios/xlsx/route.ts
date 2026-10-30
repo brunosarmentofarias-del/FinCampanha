@@ -1,11 +1,12 @@
 import ExcelJS from "exceljs";
 import { NextResponse } from "next/server";
 import { getRelatorioData } from "@/lib/data/relatorio-data";
+import { comApi } from "@/lib/api";
 import { formatMesLabel } from "@/lib/format";
 
 const MOEDA = '#,##0.00" "';
 
-export async function GET() {
+export const GET = comApi(async () => {
   const data = await getRelatorioData();
   const wb = new ExcelJS.Workbook();
   wb.creator = "FinCampanha";
@@ -186,4 +187,4 @@ export async function GET() {
         .slice(0, 10)}.xlsx"`,
     },
   });
-}
+});

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { KeyRound, Plus, ShieldCheck, Trash2, UserCog } from "lucide-react";
 import { toast } from "sonner";
+import { chamarApi } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,7 +56,7 @@ export function UsuariosTable({
   async function salvar(formData: FormData) {
     setSalvando(true);
     try {
-      const res = await fetch("/api/usuarios", {
+      const res = await chamarApi("/api/usuarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -65,9 +66,8 @@ export function UsuariosTable({
           role,
         }),
       });
-      const data = await res.json();
       if (!res.ok) {
-        toast.error(data.erro?.formErrors?.[0] ?? data.erro ?? "Falha ao criar usuário");
+        toast.error(res.mensagem);
         return;
       }
       toast.success("Acesso criado");
@@ -83,14 +83,13 @@ export function UsuariosTable({
     if (!senhaAlvo) return;
     setSalvando(true);
     try {
-      const res = await fetch(`/api/usuarios/${senhaAlvo.id}`, {
+      const res = await chamarApi(`/api/usuarios/${senhaAlvo.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ senha: formData.get("novaSenha") }),
       });
-      const data = await res.json();
       if (!res.ok) {
-        toast.error(data.erro?.fieldErrors?.senha?.[0] ?? data.erro ?? "Falha ao trocar a senha");
+        toast.error(res.mensagem);
         return;
       }
       toast.success("Senha atualizada");
@@ -102,10 +101,9 @@ export function UsuariosTable({
 
   async function excluir(u: UsuarioRow) {
     if (!confirm(`Remover o acesso de "${u.nome ?? u.email}"?`)) return;
-    const res = await fetch(`/api/usuarios/${u.id}`, { method: "DELETE" });
-    const data = await res.json();
+    const res = await chamarApi(`/api/usuarios/${u.id}`, { method: "DELETE" });
     if (!res.ok) {
-      toast.error(data.erro ?? "Falha ao remover");
+      toast.error(res.mensagem);
       return;
     }
     toast.success("Acesso removido");

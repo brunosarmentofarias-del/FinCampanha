@@ -16,8 +16,17 @@ model User {
   email        String   @unique
   passwordHash String
   nome         String?
-  role         Role     @default(ADMIN)
+  role         Role     @default(FINANCEIRO) // nunca ADMIN por padrão: privilégio máximo só quando pedido explicitamente
   createdAt    DateTime @default(now())
+}
+
+// Falhas de login recentes por e-mail — base do bloqueio temporário contra força bruta.
+model LoginTentativa {
+  id        String   @id @default(cuid())
+  email     String
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
 }
 
 enum Role {
@@ -67,7 +76,7 @@ model Receita {
   parcelaTotal  Int?
   vencimento    DateTime
   dataPagamento DateTime?
-  valor         Decimal // SEMPRE POSITIVO
+  valor         Decimal        @db.Decimal(14, 2) // SEMPRE POSITIVO (CHECK no banco)
   status        StatusReceita
   importHash    String?        @unique
   idempotencyKey String?       @unique // gerada pelo formulário ao abrir o diálogo de criação; evita duplo-clique/retry criando 2 lançamentos
@@ -90,7 +99,7 @@ model Despesa {
   parcelaTotal  Int?
   vencimento    DateTime
   dataPagamento DateTime?
-  valor         Decimal // SEMPRE POSITIVO (o sinal é dado pelo tipo)
+  valor         Decimal        @db.Decimal(14, 2) // SEMPRE POSITIVO (CHECK no banco)
   status        StatusDespesa
   rateio        TipoRateio
   clienteId     String? // obrigatório se rateio = ESPECIFICA; null nos outros
@@ -101,7 +110,7 @@ model Despesa {
 
   fornecedor Fornecedor    @relation(fields: [fornecedorId], references: [id])
   grupo      GrupoDespesa  @relation(fields: [grupoId], references: [id])
-  cliente    Cliente?      @relation(fields: [clienteId], references: [id])
+  cliente    Cliente?      @relation(fields: [clienteId], references: [id], onDelete: Restrict)
 
   @@index([fornecedorId])
   @@index([grupoId])
